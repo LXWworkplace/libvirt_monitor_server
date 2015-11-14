@@ -195,6 +195,14 @@ class libvirt_client(object):
                 logger.debug("Delete nonexists uuid: %s" % uuid_string)
                 db.delete(cloud_host_table, where="`uuid`='%s'" % uuid_string)
         time_sleep = 3
+        # libvirt中提供virDomainGetInfo方法
+        # struct virDomainInfo{  
+        #     unsigned char state :         // the running state, one of virDomainState    
+        #     unsigned long maxMem :        // the maximum memory in KBytes allowed   
+        #     unsigned long memory :        // the memory in KBytes used by the domain   
+        #     unsigned short nrVirtCpu :    // the number of virtual CPUs for the domain   
+        #     unsigned long long cpuTime :  // the CPU time used in nanoseconds   
+        # }  
         infos_first = dom.info()
         start_cputime = infos_first[4]
         start_time = time.time()
@@ -204,7 +212,8 @@ class libvirt_client(object):
         end_time = time.time()
         cputime = (end_cputime - start_cputime)
         cores = infos_second[3]
-        print cputime
+        # print cputime
+
         cpu_usage = "%.3f" % (float(100 * cputime) / float(time_sleep*cores*1000000000))
         result['ip'] = self.ip
         result['name'] = dom.name()

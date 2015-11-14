@@ -15,6 +15,13 @@ Date: 2015-11-14 18:02:04
 
 SET FOREIGN_KEY_CHECKS=0;
 
+--
+-- Current Database: `cloud_monitor`
+--
+
+CREATE DATABASE /*!32312 IF NOT EXISTS*/ `cloud_monitor` /*!40100 DEFAULT CHARACTER SET utf8 */;
+
+USE `cloud_monitor`;
 -- ----------------------------
 -- Table structure for cloud_config
 -- ----------------------------

@@ -1,0 +1,125 @@
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Data Graph</title>
+    <script type="text/javascript" src="http://libs.baidu.com/jquery/2.0.0/jquery.js"></script>
+    <script src="http://echarts.baidu.com/build/dist/echarts.js"></script>
+</head>
+<body>
+    <div id="chart1" style="height:400px;width:50%"></div>
+    <div id="chart2" style="height:400px;width:50%"></div>
+    <script type="text/javascript">
+        var uuid = "ba16b497-d49d-4a0b-a00b-246209076bfa"
+        var stime = '2015-11-14 14'
+        var etime = '2015-11-14 16'
+
+        var cpu_usage = []
+        var memory_usage = []
+        var time = []
+        $.ajax({
+            type:"POST",
+            url:"http://localhost:9898/instances/"+uuid,
+            data:{
+                stime:stime,
+                etime:etime
+            },
+            dataType:'JSON',
+            success:function(data){
+                for(var i in data.message){
+                    var item = data.message[i]
+                    time.push(item.time)
+
+                    var jstr = item.result
+                    jstr = jstr.replace(/u'/g,"'")
+                    jstr = jstr.replace(/'/g,"\"")
+                    jstr = jstr.replace(/L/g,"")
+                    // console.log(jstr)
+                    json = JSON.parse(jstr)
+                    cpu_usage.push(json.cpu_usage)
+                    memory_usage.push((parseFloat(json.memory_usage)/1024).toFixed(2))
+                }
+                // 路径配置
+                require.config({
+                    paths: {
+                        echarts: 'http://echarts.baidu.com/build/dist'
+                    }
+                });
+                
+                require(
+                    [
+                        'echarts',
+                        'echarts/chart/bar',
+                        'echarts/chart/line',
+                    ],
+                    function (ec) {
+                        // CPU使用量
+                        var chart1 = ec.init(document.getElementById('chart1')); 
+                        chart1.setOption({
+                            tooltip : {
+                                trigger: 'axis',
+                                showDelay: 0,
+                                transitionDuration: 0
+                            },
+                            legend: {
+                                data:['CPU使用量']
+                            },
+                            calculable : true,
+                            xAxis : [{
+                                name: '时间',
+                                type: 'category',
+                                data: time
+                            }],
+                            yAxis : [{
+                                name: 'CPU使用量(%)',
+                                type: 'value',
+                                splitArea: {show: true},
+                                axisLabel: {show: true},
+                            }],
+                            series : [{
+                                name: 'CPU使用量',
+                                type: 'line',
+                                data: cpu_usage,
+                                smooth: true,
+                                clickable: false,
+                                symbol:'none'
+                            }]
+                        });
+                        // 内存使用量
+                        var chart2 = ec.init(document.getElementById('chart2'));
+                        chart2.setOption({
+                            tooltip : {
+                                trigger: 'axis',
+                                showDelay: 0,
+                                transitionDuration: 0
+                            },
+                            legend: {
+                                data:['内存使用量']
+                            },
+                            calculable : true,
+                            xAxis : [{
+                                name: '时间',
+                                type: 'category',
+                                data: time
+                            }],
+                            yAxis : [{
+                                name: '内存使用量(M)',
+                                type: 'value',
+                                splitArea: {show: true},
+                                axisLabel: {show: true},
+                            }],
+                            series : [{
+                                name: '内存使用量',
+                                type: 'line',
+                                data: memory_usage,
+                                smooth: true,
+                                clickable: false,
+                                symbol:'none'
+                            }]
+                        });
+                    }
+                );
+            }
+        })
+    </script>
+</body>
+</html>

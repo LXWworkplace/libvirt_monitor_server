@@ -1,4 +1,5 @@
 # coding: utf-8
+import sys
 try:
     from gevent import monkey
     monkey.patch_all()
@@ -10,15 +11,13 @@ except (ImportError,ImportWarning) as e:
     sys.exit(1)
 
 import os
-import sys
 import json
 import time
 import mimerender
 from cloud_monitor_settings import *
 
 try:
-    import web as web
-    from web import session as _session
+    import web
 except (ImportError,ImportWarning) as e:
     print "Can not find python-webpy, in ubuntu just run \"sudo apt-get install python-webpy\"."
     print e
@@ -34,12 +33,6 @@ render_json = lambda **args: json.dumps(args)
 render_html = lambda message: '<html><body>%s</body></html>'%message
 render_txt = lambda message: message
 
-urls = (
-    '/interval','setInterval',
-    '/enable/(.*)','enableByUUID',
-    '/data/(.*)','getDataByUUID'
-)
-
 class getInstanceList(object):
     @mimerender(
         default = 'json',
@@ -49,10 +42,11 @@ class getInstanceList(object):
         txt  = render_txt
     )
     def GET(self):
+        web.header('Access-Control-Allow-Origin','*')
         table = 'cloud_host'
         try:
             results = list()
-            ret = db.select(table,what='id,enable,uuid')
+            ret = db.select(table,what='id,uuid,ip,enable')
             for line in ret:
                 results.append(dict(line))
         except Exception,e:
@@ -68,6 +62,7 @@ class setInterval():
         txt  = render_txt
     )
     def POST(self):
+        web.header('Access-Control-Allow-Origin','*')
         table='cloud_config'
         data = web.input()
         try:
@@ -112,6 +107,7 @@ class getDataByUUID():
         txt = render_txt
     )
     def POST(self, uuid):
+        web.header('Access-Control-Allow-Origin','*')
         table = 'cloud_result'
         data = web.input()
         try:
@@ -129,6 +125,17 @@ class getDataByUUID():
         return {'message':results}
 
 if __name__ == '__main__':
+
+    urls = (
+        # 列出所有instance
+        '/instances','getInstanceList',
+        # 按时间起始结束，获取指定uuid的instance数据
+        '/instances/(.*)','getDataByUUID',
+        # 设置抓取数据间隔（秒）
+        '/interval','setInterval',
+        # 设置是否抓取指定uuid的instance
+        '/enable/(.*)','enableByUUID',
+    )
     try:
         application = web.application(urls, globals()).wsgifunc()
         WSGIServer(('', api_server_port), application).serve_forever()
