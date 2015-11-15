@@ -2,23 +2,55 @@
 <head>
     <meta charset="utf-8">
     <title>Data Graph</title>
-    <script type="text/javascript" src="http://libs.baidu.com/jquery/2.0.0/jquery.js"></script>
-    <script src="http://echarts.baidu.com/build/dist/echarts.js"></script>
+    <script type="text/javascript" src="js/jquery.js"></script>
+    <script src="js/echarts.js"></script>
+    <style>
+        .contaier{
+            width: 70%;
+            text-align: center;
+            margin: auto;
+        }
+        .chart{
+            height: 300px;
+            width: 50%;
+            float: left;  
+        }
+    </style>
 </head>
 <body>
-    <div id="chart1" style="height:400px;width:50%"></div>
-    <div id="chart2" style="height:400px;width:50%"></div>
+    <div class="contaier">
+        <div id="chart1" class="chart"></div>
+        <div id="chart2" class="chart"></div>
+        <div id="chart3" class="chart"></div>
+        <div id="chart4" class="chart"></div>
+        <div id="chart5" class="chart"></div>
+        <div id="chart6" class="chart"></div>
+    <div>
     <script type="text/javascript">
         var uuid = "ba16b497-d49d-4a0b-a00b-246209076bfa"
-        var stime = '2015-11-14 14'
-        var etime = '2015-11-14 16'
+        var stime = '2015-11-15'
+        var etime = '2015-11-16'
 
-        var cpu_usage = []
-        var memory_usage = []
         var time = []
+        // 1
+        var cpu_usage = []
+        // 2
+        var memory_usage = []
+        // 3
+        var rx_packets = []
+        var tx_packets = []
+        // 4
+        var rx_bytes = []
+        var tx_bytes = []
+        // 5
+        var rd_req = []
+        var wr_req = []
+        // 6
+        var rd_bytes = []
+        var wr_bytes = []
         $.ajax({
             type:"POST",
-            url:"http://localhost:9898/instances/"+uuid,
+            url:"http://173.26.100.211:9898/instances/"+uuid,
             data:{
                 stime:stime,
                 etime:etime
@@ -37,6 +69,18 @@
                     json = JSON.parse(jstr)
                     cpu_usage.push(json.cpu_usage)
                     memory_usage.push((parseFloat(json.memory_usage)/1024).toFixed(2))
+                    for(k in json.vir_interfaces){
+                        rx_packets.push(json.vir_interfaces[k].rx_packets)
+                        tx_packets.push(json.vir_interfaces[k].tx_packets)
+                        rx_bytes.push(json.vir_interfaces[k].rx_bytes)
+                        tx_bytes.push(json.vir_interfaces[k].tx_bytes)
+                    }
+                    for(k in json.vir_disks){
+                        rd_req.push(json.vir_disks[k].rd_req)
+                        wr_req.push(json.vir_disks[k].wr_req)
+                        rd_bytes.push(json.vir_disks[k].rd_bytes)
+                        wr_bytes.push(json.vir_disks[k].wr_bytes)
+                    }
                 }
                 // 路径配置
                 require.config({
@@ -111,6 +155,166 @@
                                 name: '内存使用量',
                                 type: 'line',
                                 data: memory_usage,
+                                smooth: true,
+                                clickable: false,
+                                symbol:'none'
+                            }]
+                        });
+                        // 网卡流量
+                        var chart3 = ec.init(document.getElementById('chart3'));
+                        chart3.setOption({
+                            tooltip : {
+                                trigger: 'axis',
+                                showDelay: 0,
+                                transitionDuration: 0
+                            },
+                            legend: {
+                                data:['下载流量','上传流量']
+                            },
+                            calculable : true,
+                            xAxis : [{
+                                name: '时间',
+                                type: 'category',
+                                data: time
+                            }],
+                            yAxis : [{
+                                name: '网卡流量(packets)',
+                                type: 'value',
+                                splitArea: {show: true},
+                                axisLabel: {show: true},
+                            }],
+                            series : [{
+                                name: '下载流量',
+                                type: 'line',
+                                data: rx_packets,
+                                smooth: true,
+                                clickable: false,
+                                symbol:'none'
+                            },
+                            {
+                                name: '上传流量',
+                                type: 'line',
+                                data: tx_packets,
+                                smooth: true,
+                                clickable: false,
+                                symbol:'none'
+                            }]
+                        });
+                        // 网卡吞吐量
+                        var chart4 = ec.init(document.getElementById('chart4'));
+                        chart4.setOption({
+                            tooltip : {
+                                trigger: 'axis',
+                                showDelay: 0,
+                                transitionDuration: 0
+                            },
+                            legend: {
+                                data:['下载字节数','上传字节数']
+                            },
+                            calculable : true,
+                            xAxis : [{
+                                name: '时间',
+                                type: 'category',
+                                data: time
+                            }],
+                            yAxis : [{
+                                name: '网卡吞吐量(bytes)',
+                                type: 'value',
+                                splitArea: {show: true},
+                                axisLabel: {show: true},
+                            }],
+                            series : [{
+                                name: '下载字节数',
+                                type: 'line',
+                                data: rx_bytes,
+                                smooth: true,
+                                clickable: false,
+                                symbol:'none'
+                            },
+                            {
+                                name: '上传字节数',
+                                type: 'line',
+                                data: tx_bytes,
+                                smooth: true,
+                                clickable: false,
+                                symbol:'none'
+                            }]
+                        });
+                        // 硬盘读写
+                        var chart5 = ec.init(document.getElementById('chart5'));
+                        chart5.setOption({
+                            tooltip : {
+                                trigger: 'axis',
+                                showDelay: 0,
+                                transitionDuration: 0
+                            },
+                            legend: {
+                                data:['硬盘读请求','硬盘写请求']
+                            },
+                            calculable : true,
+                            xAxis : [{
+                                name: '时间',
+                                type: 'category',
+                                data: time
+                            }],
+                            yAxis : [{
+                                name: '硬盘读写',
+                                type: 'value',
+                                splitArea: {show: true},
+                                axisLabel: {show: true},
+                            }],
+                            series : [{
+                                name: '硬盘读请求',
+                                type: 'line',
+                                data: rd_req,
+                                smooth: true,
+                                clickable: false,
+                                symbol:'none'
+                            },
+                            {
+                                name: '硬盘写请求',
+                                type: 'line',
+                                data: wr_req,
+                                smooth: true,
+                                clickable: false,
+                                symbol:'none'
+                            }]
+                        });
+                        // IO频率
+                        var chart6 = ec.init(document.getElementById('chart6'));
+                        chart6.setOption({
+                            tooltip : {
+                                trigger: 'axis',
+                                showDelay: 0,
+                                transitionDuration: 0
+                            },
+                            legend: {
+                                data:['读出字节','写入字节']
+                            },
+                            calculable : true,
+                            xAxis : [{
+                                name: '时间',
+                                type: 'category',
+                                data: time
+                            }],
+                            yAxis : [{
+                                name: 'IO频率(bytes)',
+                                type: 'value',
+                                splitArea: {show: true},
+                                axisLabel: {show: true},
+                            }],
+                            series : [{
+                                name: '读出字节',
+                                type: 'line',
+                                data: rd_bytes,
+                                smooth: true,
+                                clickable: false,
+                                symbol:'none'
+                            },
+                            {
+                                name: '写入字节',
+                                type: 'line',
+                                data: wr_bytes,
                                 smooth: true,
                                 clickable: false,
                                 symbol:'none'

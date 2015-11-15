@@ -1,9 +1,9 @@
 <html>
 <head>
 	<title>intances</title>
-	<link rel="stylesheet" type="text/css" href="http://cdn.datatables.net/1.10.10/css/jquery.dataTables.min.css">
-	<script type="text/javascript" src="http://libs.baidu.com/jquery/2.0.0/jquery.js"></script>
-	<script type="text/javascript" src="http://cdn.datatables.net/1.10.10/js/jquery.dataTables.min.js"></script>
+	<link rel="stylesheet" type="text/css" href="css/jquery.dataTables.min.css">
+	<script type="text/javascript" src="js/jquery.js"></script>
+	<script type="text/javascript" src="js/jquery.dataTables.min.js"></script>
 	<style>
 	.center{
 		text-align: center;
@@ -29,7 +29,7 @@
 $(document).ready(function(){
     $('#myTable').DataTable({
     	"ajax":{
-    		"url": "http://localhost:9898/instances",
+    		"url": "http://173.26.100.211:9898/instances",
     		"dataSrc": "message"
     	},
     	"columns": [
