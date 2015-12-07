@@ -37,26 +37,14 @@ except Exception, e:
 	logger.exception(e)
 	raise e
 
-cloud_host_table = 'cloud_host'
+cloud_vhost_table = 'cloud_vhost'
 cloud_config_table = 'cloud_config'
 cloud_result_table = 'cloud_result'
 
 queue_host_list = Queue.Queue()  #put hostlist here
 queue_result = Queue.Queue()    #put result of check here
 queue_log = Queue.Queue()       #put log message here
-
-try:
-	interval_check_peroid = db.select(cloud_config_table, 
-								  where="`key`='interval'").list()[0]['value']
-								#interval that used to check instance
-except Exception, e:
-	logger.exception(e)
-	raise e
 								
-interval_travelsal_libvirtd = 60
-#interval that travelsal uuids from remote libvirtd
-host_list = nova_compute_node
-
 def condition_delete_uuid(uuid):
     import shelve
     uuids_dat = 'uuids_dat.dat'
@@ -69,7 +57,7 @@ def condition_delete_uuid(uuid):
     if db[uuid] == 3:
         db[uuid]=0
         return True
-    db[uuid] += 1
+    db[uuid] += 1f
     return False
   
 def setup_self():
@@ -173,8 +161,8 @@ class getNodeValue(object):
 #libvirt client: actually do some work
 class libvirt_client(object):
     def __init__(self, uri, queue):
-        self.ip = uri
-        self.uri = 'qemu+tcp://%s/system' % uri
+        self.host = uri
+        self.uri = 'qemu+ssh://%s/system' % uri
         self.queue = queue
         self.connect()
     
@@ -193,7 +181,7 @@ class libvirt_client(object):
             ret = condition_delete_uuid(uuid_string)
             if ret:
                 logger.debug("Delete nonexists uuid: %s" % uuid_string)
-                db.delete(cloud_host_table, where="`uuid`='%s'" % uuid_string)
+                db.delete(cloud_vhost_table, where="`uuid`='%s'" % uuid_string)
         time_sleep = 3
         # libvirt中提供virDomainGetInfo方法
         # struct virDomainInfo{  
@@ -215,7 +203,7 @@ class libvirt_client(object):
         # print cputime
 
         cpu_usage = "%.3f" % (float(100 * cputime) / float(time_sleep*cores*1000000000))
-        result['ip'] = self.ip
+        result['host'] = self.host
         result['name'] = dom.name()
         result['time'] = time.strftime('%Y-%m-%d %H:%M', time.localtime())
         result['state'] = infos_second[0]
@@ -291,13 +279,19 @@ class thread_read_host_list(threading.Thread):
     def __init__(self):
         super(thread_read_host_list, self).__init__()
         self.daemon = False
-
+        
     def run(self):
         while True:
+            host_list = db.select(cloud_config_table, 
+                                  where="`key`='host'").list()
+            #interval that travelsal uuids from remote libvirtd
+            interval_travelsal_libvirtd = db.select(cloud_config_table, 
+                                          where="`key`='interval_travelsal'").list()[0]['value']
             for host in host_list:
+                host = host['value']
                 try:
                     dom_ids = []
-                    uri = 'qemu+tcp://%s/system' % host
+                    uri = 'qemu+ssh://%s/system' % host
                     try:
                        conn = _libvirt.open(uri)
                     except Exception, e:
@@ -308,16 +302,16 @@ class thread_read_host_list(threading.Thread):
                         dom = conn.lookupByID(domain_id)
                         dom_ids.append(dom.UUIDString())
                     for uuid in dom_ids:
-                        db_result = db.select(cloud_host_table, where="uuid='%s'" % uuid)
+                        db_result = db.select(cloud_vhost_table, where="uuid='%s'" % uuid)
                         if not db_result.list():
-                            db.insert(cloud_host_table, uuid=uuid, ip=host, enable=1)
+                            db.insert(cloud_vhost_table, uuid=uuid, host=host, enable=1)
                     #queue_host_list.put((host, uuid))
                     print 'thread_read_host_list'
                 except Exception, e:
                     logger.exception(e)
                 time.sleep(interval_travelsal_libvirtd)
 
-#TODO: read host list from db (table cloud_host)
+#TODO: read host list from db (table cloud_vhost)
 class thread_get_host_list_from_db(threading.Thread):
     def __init__(self):
         super(thread_get_host_list_from_db, self).__init__()
@@ -326,10 +320,13 @@ class thread_get_host_list_from_db(threading.Thread):
     def run(self):
         while True:
             try:
-                lists = db.select(cloud_host_table).list()
+                #interval that used to check instance
+                interval_check_peroid = db.select(cloud_config_table, 
+                                              where="`key`='interval_check'").list()[0]['value']
+                lists = db.select(cloud_vhost_table).list()
                 for line in lists:
                     if int(line['enable']) == 1:
-                        queue_host_list.put((line['ip'], line['uuid']))
+                        queue_host_list.put((line['host'], line['uuid']))
                 print 'thread_get_host_list_from_db '+str(queue_host_list.qsize())
             except Exception, e:
                 logger.exception(e)

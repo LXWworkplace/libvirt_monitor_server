@@ -46,14 +46,14 @@ class getInstanceList(object):
         table = 'cloud_host'
         try:
             results = list()
-            ret = db.select(table,what='id,uuid,ip,enable')
+            ret = db.select(table,what='id,uuid,host,enable')
             for line in ret:
                 results.append(dict(line))
         except Exception,e:
             raise web.internalerror(message=e)
         return {'message':results}
 
-class setInterval():
+class setIntervalCheck():
     @mimerender(
         default = 'json',
         html = render_html,
@@ -73,8 +73,31 @@ class setInterval():
             return {'message':'failed, interval too short'}
         elif int(interval)>=3600: 
             return {'message':'failed, interval too long'}
-        db.update(table,where="`key`='interval'",value=interval)
-        return {'message':'success, new interval is '+interval}
+        db.update(table,where="`key`='interval_check'",value=interval)
+        return {'message':'success, new check interval is '+interval}
+
+class setIntervalTravelsal():
+    @mimerender(
+        default = 'json',
+        html = render_html,
+        xml  = render_xml,
+        json = render_json,
+        txt  = render_txt
+    )
+    def POST(self):
+        web.header('Access-Control-Allow-Origin','*')
+        table='cloud_config'
+        data = web.input()
+        try:
+            interval = data.interval
+        except AttributeError:
+            return {'message':'attribute_error'}
+        if int(interval)<=0:
+            return {'message':'failed, interval too short'}
+        elif int(interval)>=3600: 
+            return {'message':'failed, interval too long'}
+        db.update(table,where="`key`='interval_travelsal'",value=interval)
+        return {'message':'success, new travelsal interval is '+interval}
 
 class enableByUUID():
     @mimerender(
@@ -85,8 +108,9 @@ class enableByUUID():
         txt = render_txt
     )
     def POST(self, uuid):
+        web.header('Access-Control-Allow-Origin','*')
         import datetime
-        table = 'cloud_host'
+        table = 'cloud_vhost'
         data = web.input()
         try:
             enable = data.enable
@@ -96,7 +120,48 @@ class enableByUUID():
             db.update(table,where="`uuid`='%s'" % uuid,enable=int(enable))
             return {'message':'success'}
         except Exception,e:
-            raise web.notfound(message=e)       
+            raise web.notfound(message=e) 
+
+class addHost():
+    @mimerender(
+        default='json',
+        html = render_html,
+        xml = render_xml,
+        json = render_json,
+        txt = render_txt
+    )
+    def POST(self, uuid):
+        web.header('Access-Control-Allow-Origin','*')
+        import datetime
+        table = 'cloud_config'
+        data = web.input()
+        try:
+            host = data.host
+        except AttributeError:
+            return {'message':'attribute_error'}
+        try:
+            db.insert(table, host=host)
+            return {'message':'success'}
+        except Exception,e:
+            raise web.notfound(message=e) 
+
+class deleteHost():
+    @mimerender(
+        default='json',
+        html = render_html,
+        xml = render_xml,
+        json = render_json,
+        txt = render_txt
+    )
+    def DELETE(self, host):
+        web.header('Access-Control-Allow-Origin','*')
+        import datetime
+        table = 'cloud_config'
+        try:
+            db.delete(table,where="`key`='host' and `value`='%s' " % host)
+            return {'message':'success'}
+        except Exception,e:
+            raise web.notfound(message=e)  
 
 class getDataByUUID():
     @mimerender(
@@ -123,18 +188,35 @@ class getDataByUUID():
         except Exception,e:
             raise web.internalerror(message=e)
         return {'message':results}
+    def DELETE(self, host):
+        web.header('Access-Control-Allow-Origin','*')
+        import datetime
+        table = 'cloud_vhost'
+        try:
+            db.delete(table,where="`uuid`='%s'" % uuid)
+            return {'message':'success'}
+        except Exception,e:
+            raise web.notfound(message=e)    
 
 if __name__ == '__main__':
 
     urls = (
-        # 列出所有instance
+        # 列出所有虚拟机
         '/instances','getInstanceList',
-        # 按时间起始结束，获取指定uuid的instance数据
-        '/instances/(.*)','getDataByUUID',
-        # 设置抓取数据间隔（秒）
-        '/interval','setInterval',
         # 设置是否抓取指定uuid的instance
         '/enable/(.*)','enableByUUID',
+        # 按时间起始结束，获取指定uuid的instance数据/删除指定虚拟机
+        '/instances/(.*)','getDataByUUID',
+
+        # 设置抓取数据间隔（秒）
+        '/interval/check','setIntervalCheck',
+        # 设置获取虚拟机列表间隔（秒）
+        '/interval/travelsal','setIntervalTravelsal',
+
+        # 添加物理机IP
+        '/host/add','addHost',
+        # 删除物理机IP
+        '/host/(.*)','deleteHost',
     )
     try:
         application = web.application(urls, globals()).wsgifunc()
