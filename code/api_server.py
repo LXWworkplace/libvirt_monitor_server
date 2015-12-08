@@ -43,7 +43,7 @@ class getInstanceList(object):
     )
     def GET(self):
         web.header('Access-Control-Allow-Origin','*')
-        table = 'cloud_host'
+        table = 'cloud_vhost'
         try:
             results = list()
             ret = db.select(table,what='id,uuid,host,enable')

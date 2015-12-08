@@ -57,7 +57,7 @@ def condition_delete_uuid(uuid):
     if db[uuid] == 3:
         db[uuid]=0
         return True
-    db[uuid] += 1f
+    db[uuid] += 1
     return False
   
 def setup_self():
@@ -309,7 +309,7 @@ class thread_read_host_list(threading.Thread):
                     print 'thread_read_host_list'
                 except Exception, e:
                     logger.exception(e)
-                time.sleep(interval_travelsal_libvirtd)
+                time.sleep(int(interval_travelsal_libvirtd))
 
 #TODO: read host list from db (table cloud_vhost)
 class thread_get_host_list_from_db(threading.Thread):

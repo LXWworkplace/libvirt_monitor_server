@@ -38,13 +38,13 @@ CREATE TABLE `cloud_config` (
 -- ----------------------------
 INSERT INTO `cloud_config` VALUES ('1', 'interval_check', '200');
 INSERT INTO `cloud_config` VALUES ('2', 'interval_travelsal', '200');
-INSERT INTO `host` VALUES ('3', 'host', '');
+INSERT INTO `cloud_config` VALUES ('3', 'host', '173.26.100.211');
 
 -- ----------------------------
 -- Table structure for cloud_host
 -- ----------------------------
 DROP TABLE IF EXISTS `cloud_vhost`;
-CREATE TABLE `cloud_host` (
+CREATE TABLE `cloud_vhost` (
   `id` int(64) NOT NULL AUTO_INCREMENT,
   `host` varchar(64) NOT NULL,
   `uuid` varchar(256) NOT NULL,
